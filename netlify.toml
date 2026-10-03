@@ -1,0 +1,15 @@
+# Netlify config: no build step, the folder itself is the site.
+[build]
+  publish = "."
+
+# Cache images/fonts for a long time, HTML/JS/CSS revalidate so edits show up right away.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
