@@ -476,6 +476,13 @@ footer { padding: 60px 0 40px; text-align: center; font-size: 13.5px; color: var
   display: grid; grid-template-columns: repeat(6, 1fr); visibility: hidden;
 }
 .wipe.out, .wipe.in { visibility: visible; }
+/* Covered and still: drawn by the snippet at the top of each page's <body> before anything else is
+   painted, until main.js plays "in" (same look, so the hand-over is invisible). Gives up after 4s
+   in case main.js never runs, so a page can't get stuck behind it */
+.wipe.hold { visibility: visible; animation: holdGiveUp 0s 4s forwards; }
+.wipe.hold i, .wipe.hold .wipe-bar::after { transform: none; }
+.wipe.hold .wipe-hud { opacity: 1; }
+@keyframes holdGiveUp { to { visibility: hidden; } }
 .wipe.out { pointer-events: auto; } /* swallow double clicks while leaving */
 .wipe i {
   --d: 0ms; position: relative; margin-right: -1px; /* overlap neighbours: no hairline seams */

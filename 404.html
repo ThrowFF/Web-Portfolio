@@ -14,6 +14,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Page-transition cover: when arriving through a transition, write the closed shutters and loading card
+    // into the page right here, at the end of <head>. Writing them creates the page body together with
+    // them, so they exist from the very first frame the browser can draw (a snippet inside <body> can still
+    // miss one frame in Firefox-based browsers). main.js takes over in transitions().
+    // This must stay the last thing in <head>. Keep the 6 shutters in step with WIPE.cols in main.js.
+    (function () { try {
+      var wp = JSON.parse(sessionStorage.getItem("wipe"));
+      if (!wp) return;
+      document.write("<div class=\"wipe hold\" aria-hidden=\"true\">" + "<i></i>".repeat(6) + "<div class=\"wipe-hud\"><small></small><b></b><span class=\"wipe-bar\"></span></div></div>");
+      var hud = document.querySelector(".wipe-hud");
+      hud.children[0].textContent = wp.k || "";
+      hud.children[1].textContent = wp.t || "";
+    } catch (e) {} })();
+  </script>
 </head>
 <body data-page="notfound">
   <main id="app"></main>

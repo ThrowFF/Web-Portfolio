@@ -63,7 +63,7 @@ function buildShell() {
     </div>
     <div class="toast" id="toast" role="status"><div class="trophy">★</div><div><small>Achievement unlocked</small><b></b></div></div>
     <button class="sound-toggle" type="button" aria-label="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="waves" d="M15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="mute" d="M16 9.5l5 5m0-5-5 5"/></svg></button>
-    <div class="wipe" aria-hidden="true">${"<i></i>".repeat(WIPE.cols)}<div class="wipe-hud"><small></small><b></b><span class="wipe-bar"></span></div></div>
+    ${$(".wipe") ? "" /* already drawn by the cover snippet in the page's HTML */ : `<div class="wipe" aria-hidden="true">${"<i></i>".repeat(WIPE.cols)}<div class="wipe-hud"><small></small><b></b><span class="wipe-bar"></span></div></div>`}
   `);
   $(".nav-toggle").addEventListener("click", () => $(".nav-links").classList.toggle("open"));
   $$(".nav-links a").forEach((a) => a.addEventListener("click", () => $(".nav-links").classList.remove("open")));
@@ -373,7 +373,7 @@ function transitions() {
     $("small", hud).textContent = info.k || "";
     $("b", hud).textContent = info.t || "";
     shutters.forEach((s, i) => s.style.setProperty("--d", Math.abs(i - originCol) * WIPE.step + "ms"));
-    w.classList.remove("in", "out"); void w.offsetWidth; w.classList.add(state);
+    w.classList.remove("in", "out", "hold"); void w.offsetWidth; w.classList.add(state);
     return Math.max(originCol, WIPE.cols - 1 - originCol) * WIPE.step;
   };
   const open = (info) => {
@@ -389,7 +389,7 @@ function transitions() {
       const el = location.hash && document.getElementById(location.hash.slice(1));
       if (el) { const r = document.documentElement.style; r.scrollBehavior = "auto"; el.scrollIntoView(); r.scrollBehavior = ""; }
       open(pending);
-    }
+    } else w.classList.remove("hold");
   }
 
   addEventListener("pointerdown", (e) => (px = e.clientX), true); // card clicks are re-dispatched with clientX 0
