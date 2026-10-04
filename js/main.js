@@ -52,7 +52,7 @@ function buildShell() {
     </nav>`);
   document.body.insertAdjacentHTML("beforeend", `
     <footer class="wrap">
-      <p>© ${new Date().getFullYear()} ${esc(PROFILE.name)} · Built by hand, hosted on Netlify</p>
+      <p>© ${new Date().getFullYear()} ${esc(PROFILE.name)} · Hosted on GitHub Pages</p>
     </footer>
     <div class="modal" id="modal" role="dialog" aria-modal="true">
       <div class="modal-box"><span class="modal-title"></span><button class="modal-close">Close ✕</button><div class="modal-content"></div></div>
@@ -70,24 +70,21 @@ function buildShell() {
 function cursor() {
   if (!finePointer || reduceMotion) return;
   document.body.classList.add("custom-cursor");
-  document.body.insertAdjacentHTML("beforeend", `<div class="cursor off"></div><div class="reticle off"><i></i><i></i><i></i><i></i></div>`);
-  const ring = $(".cursor"), ret = $(".reticle"), parts = [ring, ret];
-  let x = 0, y = 0, cx = 0, cy = 0, seen = false;
+  document.body.insertAdjacentHTML("beforeend", PROFILE.cursor === "crosshair"
+    ? `<div class="cursor crosshair off"><i></i><i></i><i></i><i></i></div>`
+    : `<div class="cursor arrow off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v17.5l4.6-4.1 3 6.6 3-1.4-2.9-6.4H17z"/></svg></div>`);
+  const cur = $(".cursor");
   addEventListener("mousemove", (e) => {
-    x = e.clientX; y = e.clientY;
-    if (!seen) { seen = true; cx = x; cy = y; } // first move: ring starts on the pointer instead of flying in
-    ret.style.transform = `translate(${x}px,${y}px)`;
-    parts.forEach((p) => p.classList.remove("off"));
+    cur.style.transform = `translate(${e.clientX}px,${e.clientY}px)`;
+    cur.classList.remove("off");
   });
-  document.documentElement.addEventListener("mouseleave", () => parts.forEach((p) => p.classList.add("off")));
-  (function loop() { cx += (x - cx) * 0.28; cy += (y - cy) * 0.28; ring.style.transform = `translate(${cx}px,${cy}px)`; requestAnimationFrame(loop); })();
+  document.documentElement.addEventListener("mouseleave", () => cur.classList.add("off"));
   document.addEventListener("mouseover", (e) => {
-    const on = !!e.target.closest("a,button,.card,.level,.shot");
-    const read = !on && !!e.target.closest(".readable"); // over a description: open into a faint scope around the glow
-    parts.forEach((p) => { p.classList.toggle("hover", on); p.classList.toggle("read", read); });
+    cur.classList.toggle("hover", !!e.target.closest("a,button,.card,.level,.shot"));
+    cur.classList.toggle("on-light", !!e.target.closest(".btn.solid"));
   });
   addEventListener("mousedown", (e) => {
-    parts.forEach((p) => { p.classList.remove("fire"); void p.offsetWidth; p.classList.add("fire"); }); // restart recoil
+    cur.classList.remove("fire"); void cur.offsetWidth; cur.classList.add("fire"); // restart the kick
     sparks(e.clientX, e.clientY, 8);
   });
 }
@@ -358,7 +355,7 @@ function pageHome() {
         <a class="btn" href="#contact">Hire me</a>
         ${P.resume ? `<a class="btn" href="${esc(P.resume)}" target="_blank" rel="noopener">Résumé ↓</a>` : ""}
       </div>
-      <div class="stats reveal">${P.stats.map((s) => `<div class="stat"><b class="count-up">${esc(s.value)}</b><span>${esc(s.label)}</span></div>`).join("")}</div>
+      <div class="stats reveal">${P.stats.map((s) => `<div class="stat"><b class="count-up">${esc(s.value)}</b><span class="readable">${esc(s.label)}</span></div>`).join("")}</div>
     </div>
   </div></section>
 

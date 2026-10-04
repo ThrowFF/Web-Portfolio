@@ -47,8 +47,8 @@ Netlify's free plan allows files up to a few hundred MB, but keep builds small (
    A custom domain (~$10/year) is the only thing that costs money, and it's optional.
 
 ## Built-in features
-- Crosshair cursor with hit sparks and click shockwaves in the background; it locks on over links
-  and opens into a faint scope ring over descriptions
+- Custom cursor (`cursor` in `PROFILE`: `"pointer"` arrow or `"crosshair"`) that reacts to anything
+  clickable, with a click kick, hit sparks and click shockwaves in the background
 - Text spotlight: letters near the pointer glow in a soft circle that follows it
   (works on any plain-text element with class `readable`)
 - Particle-network background that fades out behind text so it never competes with reading

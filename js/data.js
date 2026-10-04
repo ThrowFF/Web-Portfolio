@@ -6,6 +6,7 @@
 const PROFILE = {
   name: "Zain Ul Abaidin",
   brand: "Twani.dev", // logo text in the top-left of every page
+  cursor: "pointer", // "pointer" (themed arrow) or "crosshair"
   role: "Game Designer",
   taglines: [
     "Game Designer · Unity Developer",

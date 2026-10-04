@@ -52,54 +52,44 @@ button { font: inherit; color: inherit; background: none; border: 0; }
 }
 
 /* =====================================================================
-   Cursor: FPS reticle (sits exactly on the pointer) + trailing lock-on ring.
-   Over links it locks on; over readable text it opens into a wide scope ring.
+   Cursor (PROFILE.cursor in data.js): "pointer" = themed arrow, "crosshair" = FPS
+   crosshair. Both sit exactly on the pointer, react to anything clickable and
+   kick on click (plus hit sparks). .on-light = over a solid amber button.
    ===================================================================== */
 @property --spread { syntax: "<length>"; inherits: true; initial-value: 0px; }
 @property --kick { syntax: "<length>"; inherits: true; initial-value: 0px; }
-.reticle, .cursor { position: fixed; top: 0; left: 0; width: 0; height: 0; pointer-events: none; z-index: 300; transition: opacity .2s; }
+.cursor { position: fixed; top: 0; left: 0; width: 0; height: 0; pointer-events: none; z-index: 300; transition: opacity .2s; }
+.cursor.off { opacity: 0; }
 
-/* Reticle: centre dot + 4 ticks around a small gap */
-.reticle {
-  --gap: 5px; --len: 7px; color: var(--accent);
-  filter: drop-shadow(0 0 1px rgba(0,0,0,.9)) drop-shadow(0 0 2px rgba(var(--accent-rgb), .4)); /* dark edge keeps it visible on light images */
+/* Arrow: tip on the hotspot; grows a touch and turns amber over clickables, dips on click */
+.cursor.arrow svg {
+  position: absolute; left: -3px; top: -2px; width: 24px; height: 24px; overflow: visible;
+  fill: var(--text); stroke: #0b0e13; stroke-width: 1.5; stroke-linejoin: round;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.45));
+  transform-origin: 3px 2px; transition: scale .2s cubic-bezier(.2,.9,.3,1.4), fill .2s, stroke .2s;
+}
+.cursor.arrow.hover svg { scale: 1.12; fill: var(--accent); }
+.cursor.arrow.hover.on-light svg { fill: #17120a; stroke: #fff; }
+.cursor.arrow.fire svg { animation: press .28s cubic-bezier(.2,.8,.3,1); }
+@keyframes press { from { transform: scale(.8); } }
+
+/* Crosshair: 4 lines around a small gap; spreads over clickables, recoils on click */
+.cursor.crosshair {
+  --gap: 4px; --len: 8px; color: var(--text);
+  filter: drop-shadow(0 0 1px rgba(0,0,0,.95)) drop-shadow(0 0 1px rgba(0,0,0,.6)); /* dark outline keeps it visible on light images and lit text */
   transition: opacity .2s, color .2s, --spread .25s cubic-bezier(.2,.9,.3,1.4);
 }
-.reticle::before { content: ""; position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
-.reticle i { position: absolute; background: currentColor; border-radius: 1px; transition: opacity .2s; }
-.reticle i:nth-child(-n+2) { left: -1px; width: 2px; height: var(--len); }
-.reticle i:nth-child(n+3) { top: -1px; height: 2px; width: var(--len); }
-.reticle i:nth-child(1) { bottom: var(--gap); transform: translateY(calc(-1 * (var(--spread) + var(--kick)))); }
-.reticle i:nth-child(2) { top: var(--gap); transform: translateY(calc(var(--spread) + var(--kick))); }
-.reticle i:nth-child(3) { right: var(--gap); transform: translateX(calc(-1 * (var(--spread) + var(--kick)))); }
-.reticle i:nth-child(4) { left: var(--gap); transform: translateX(calc(var(--spread) + var(--kick))); }
-.reticle.hover { --spread: 3px; color: var(--accent-2); }
-.reticle.read { --spread: 8px; } /* ticks spring outwards and fade, leaving the amber dot (white would vanish on lit text) */
-.reticle.read i { opacity: 0; }
-.reticle.fire { animation: recoil .32s cubic-bezier(.2,.8,.3,1); }
+.cursor.crosshair i { position: absolute; background: currentColor; }
+.cursor.crosshair i:nth-child(-n+2) { left: -1px; width: 2px; height: var(--len); }
+.cursor.crosshair i:nth-child(n+3) { top: -1px; height: 2px; width: var(--len); }
+.cursor.crosshair i:nth-child(1) { bottom: var(--gap); transform: translateY(calc(-1 * (var(--spread) + var(--kick)))); }
+.cursor.crosshair i:nth-child(2) { top: var(--gap); transform: translateY(calc(var(--spread) + var(--kick))); }
+.cursor.crosshair i:nth-child(3) { right: var(--gap); transform: translateX(calc(-1 * (var(--spread) + var(--kick)))); }
+.cursor.crosshair i:nth-child(4) { left: var(--gap); transform: translateX(calc(var(--spread) + var(--kick))); }
+.cursor.crosshair.hover { --spread: 4px; color: var(--accent); }
+.cursor.crosshair.hover.on-light { color: #17120a; filter: drop-shadow(0 0 1px rgba(255,255,255,.7)); } /* amber would vanish on solid amber buttons */
+.cursor.crosshair.fire { animation: recoil .32s cubic-bezier(.2,.8,.3,1); }
 @keyframes recoil { from { --kick: 7px; } to { --kick: 0px; } }
-
-/* Ring: 4 arcs that trail the pointer, then rotate + grow to lock on */
-.cursor { filter: drop-shadow(0 0 1px rgba(0,0,0,.8)); }
-.cursor::before, .cursor::after { content: ""; position: absolute; left: -17px; top: -17px; width: 34px; height: 34px; border-radius: 50%; }
-.cursor::before {
-  border: 1.5px solid var(--accent); opacity: .55;
-  -webkit-mask: repeating-conic-gradient(from 20deg, #000 0 50deg, transparent 0 90deg);
-          mask: repeating-conic-gradient(from 20deg, #000 0 50deg, transparent 0 90deg);
-  transition: transform .3s cubic-bezier(.2,.9,.3,1.3), border-color .2s, opacity .25s,
-              left .4s var(--ease), top .4s var(--ease), width .4s var(--ease), height .4s var(--ease);
-}
-.cursor::after { background: rgba(var(--accent-rgb), .06); opacity: 0; transform: scale(.4); transition: transform .3s cubic-bezier(.2,.9,.3,1.3), opacity .2s; }
-.cursor.hover::before { transform: rotate(45deg) scale(1.45); border-color: var(--accent-2); opacity: .9; }
-.cursor.hover::after { opacity: 1; transform: scale(1.45); }
-.cursor.read::before { /* faint dial of ticks outlining the glowing letters; resized (not scaled) so the line stays hairline */
-  left: -44px; top: -44px; width: 88px; height: 88px; border-width: 1px; opacity: .65;
-  -webkit-mask: repeating-conic-gradient(#000 0 8deg, transparent 0 15deg);
-          mask: repeating-conic-gradient(#000 0 8deg, transparent 0 15deg);
-}
-.cursor.fire::before { animation: ringKick .3s ease-out; }
-@keyframes ringKick { from { scale: .75; } to { scale: 1; } }
-.reticle.off, .cursor.off { opacity: 0; }
 .hit-spark {
   position: fixed; pointer-events: none; z-index: 299; width: 4px; height: 4px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 6px rgba(var(--accent-rgb), .6);
@@ -220,7 +210,7 @@ section { padding: 110px 0 40px; }
 .stat { padding: 0 32px; border-left: 1px solid var(--line-strong); }
 .stat:first-child { padding-left: 0; border-left: 0; }
 .stat b { display: block; font-weight: 700; font-size: 32px; line-height: 1.15; letter-spacing: -0.02em; color: var(--text); }
-.stat span { font-size: 14px; color: var(--muted); }
+.stat span { display: block; font-size: 14px; color: var(--muted); } /* block, so the glow copy lines up exactly */
 
 /* Featured strip */
 .marquee {
