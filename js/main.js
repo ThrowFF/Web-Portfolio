@@ -344,7 +344,10 @@ function modalEvents() {
    Page transitions: shutters drop from where you clicked, a loading card
    names the destination, and the next page opens them again
    ===================================================================== */
-const WIPE = { cols: 6, step: 32, close: 320, hold: 140, open: 460 }; // ms; style.css reads --close/--hold/--open
+// ms; style.css reads --close/--fill/--hold/--open. The loading bar fills 0 → 100% (fill) on the page you
+// leave, *then* the page changes, and the new page starts with the bar already full. Nothing moves while
+// the browser swaps pages, so its frozen in-between frame can never show as a jump.
+const WIPE = { cols: 6, step: 32, close: 320, fill: 420, hold: 160, open: 460 };
 
 // "/", "/index" and "/index.html" are the same page (Netlify serves all three)
 const pageKey = (u) => u.pathname.replace(/\.html$/, "").replace(/\/index$/, "/");
@@ -361,7 +364,7 @@ function wipeLabel(url, a) {
 
 function transitions() {
   const w = $(".wipe"), shutters = $$("i", w), hud = $(".wipe-hud", w);
-  w.style.cssText = `--close:${WIPE.close}ms;--hold:${WIPE.hold}ms;--open:${WIPE.open}ms`;
+  w.style.cssText = `--close:${WIPE.close}ms;--fill:${WIPE.fill}ms;--hold:${WIPE.hold}ms;--open:${WIPE.open}ms`;
   let originCol = 2, px = innerWidth / 2;
 
   // Stagger outwards from the origin column; returns the furthest shutter's delay
@@ -408,7 +411,11 @@ function transitions() {
     const info = { ...wipeLabel(url, a), c: Math.min(WIPE.cols - 1, Math.floor((px / innerWidth) * WIPE.cols)) };
     store.set("wipe", info);
     sfx.whoosh();
-    setTimeout(() => location.assign(url.href), play("out", info) + WIPE.close + 40);
+    // fetch the next page while the bar fills, so the swap itself is quick
+    document.head.append(Object.assign(document.createElement("link"), { rel: "prefetch", href: url.href }));
+    const reach = play("out", info);
+    // go once the shutters are shut and the bar (which starts as the card fades in) has reached 100%
+    setTimeout(() => location.assign(url.href), Math.max(reach + WIPE.close, WIPE.close * 0.8 + WIPE.fill) + 40);
   });
 
   // Back/forward cache restores this page still covered: open it back up

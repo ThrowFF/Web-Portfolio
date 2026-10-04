@@ -503,13 +503,14 @@ footer { padding: 60px 0 40px; text-align: center; font-size: 13.5px; color: var
 .wipe-bar { width: min(220px, 60vw); height: 2px; margin-top: 6px; background: rgba(255, 255, 255, .08); }
 .wipe-bar::after { content: ""; display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
 .wipe.out .wipe-hud { animation: hudIn .22s ease-out calc(var(--close) * .8) both; }
-.wipe.out .wipe-bar::after { animation: barLoad 2.4s cubic-bezier(.2,.6,.3,1) both; } /* creeps on if the next page is slow */
+/* one smooth 0 → 100% fill that starts with the card and ends before the page changes; transform-only,
+   so the browser runs it off the main thread and page work can't make it stutter */
+.wipe.out .wipe-bar::after { animation: barFill var(--fill) cubic-bezier(.45, .05, .25, 1) calc(var(--close) * .8) both; }
+.wipe.in .wipe-bar::after { transform: none; } /* the new page starts with the bar already full */
 .wipe.in .wipe-hud { opacity: 1; animation: hudOut .2s ease-in var(--hold) both; }
-.wipe.in .wipe-bar::after { animation: barDone var(--hold) ease-out both; }
+@keyframes barFill { to { transform: none; } }
 @keyframes hudIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes hudOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-8px); } }
-@keyframes barLoad { 20% { transform: scaleX(.6); } to { transform: scaleX(.9); } }
-@keyframes barDone { from { transform: scaleX(.6); } to { transform: scaleX(1); } }
 
 /* Play (WebGL) page */
 .player-frame {
