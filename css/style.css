@@ -61,15 +61,20 @@ button { font: inherit; color: inherit; background: none; border: 0; }
 .cursor { position: fixed; top: 0; left: 0; width: 0; height: 0; pointer-events: none; z-index: 300; transition: opacity .2s; }
 .cursor.off { opacity: 0; }
 
-/* Arrow: tip on the hotspot; grows a touch and turns amber over clickables, dips on click */
+/* Arrow: tip on the hotspot. Over clickables it swaps to an amber pointing hand
+   (fingertip on the hotspot) drawn in the same filled + dark-outline style; both dip on click */
 .cursor.arrow svg {
-  position: absolute; left: -3px; top: -2px; width: 24px; height: 24px; overflow: visible;
-  fill: var(--text); stroke: #0b0e13; stroke-width: 1.5; stroke-linejoin: round;
+  position: absolute; width: 24px; height: 24px; overflow: visible;
+  fill: var(--text); stroke: #0b0e13; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.45));
-  transform-origin: 3px 2px; transition: scale .2s cubic-bezier(.2,.9,.3,1.4), fill .2s, stroke .2s;
+  transition: opacity .12s, scale .2s cubic-bezier(.2,.9,.3,1.4), fill .2s, stroke .2s;
 }
-.cursor.arrow.hover svg { scale: 1.12; fill: var(--accent); }
-.cursor.arrow.hover.on-light svg { fill: #17120a; stroke: #fff; }
+.cursor.arrow .ptr { left: -3px; top: -2px; transform-origin: 3px 2px; }
+.cursor.arrow .hand { left: -8px; top: -2px; transform-origin: 8px 2px; fill: var(--accent); opacity: 0; scale: .8; }
+.cursor.arrow .hand .crease { fill: none; }
+.cursor.arrow.hover .ptr { opacity: 0; scale: .8; }
+.cursor.arrow.hover .hand { opacity: 1; scale: 1; }
+.cursor.arrow.on-light .hand { fill: #17120a; stroke: #fff; } /* amber would vanish on solid amber buttons */
 .cursor.arrow.fire svg { animation: press .28s cubic-bezier(.2,.8,.3,1); }
 @keyframes press { from { transform: scale(.8); } }
 

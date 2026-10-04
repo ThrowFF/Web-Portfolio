@@ -75,7 +75,10 @@ function cursor() {
   document.body.classList.add("custom-cursor");
   document.body.insertAdjacentHTML("beforeend", PROFILE.cursor === "crosshair"
     ? `<div class="cursor crosshair off"><i></i><i></i><i></i><i></i></div>`
-    : `<div class="cursor arrow off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v17.5l4.6-4.1 3 6.6 3-1.4-2.9-6.4H17z"/></svg></div>`);
+    : `<div class="cursor arrow off">
+        <svg class="ptr" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v17.5l4.6-4.1 3 6.6 3-1.4-2.9-6.4H17z"/></svg>
+        <svg class="hand" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14V4a2 2 0 0 1 4 0v5a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L6 14z"/><path class="crease" d="M10 9v3.5M14 10v3M18 11v2.5"/></svg>
+      </div>`);
   const cur = $(".cursor");
   addEventListener("mousemove", (e) => {
     cur.style.transform = `translate(${e.clientX}px,${e.clientY}px)`;
@@ -91,6 +94,34 @@ function cursor() {
     sparks(e.clientX, e.clientY, 8);
   });
 }
+/* =====================================================================
+   Text selection only starts on actual letters. Rapid clicks on empty space
+   would otherwise make the browser select the nearest paragraph.
+   ===================================================================== */
+function overText(x, y) {
+  let node, i;
+  if (document.caretPositionFromPoint) { const p = document.caretPositionFromPoint(x, y); if (p) { node = p.offsetNode; i = p.offset; } }
+  else if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(x, y); if (r) { node = r.startContainer; i = r.startOffset; } }
+  if (!node || node.nodeType !== Node.TEXT_NODE) return false;
+  // the caret snaps to the nearest text, so check the pointer is really on a character beside it
+  const range = document.createRange();
+  for (const j of [i - 1, i]) {
+    if (j < 0 || j >= node.length) continue;
+    range.setStart(node, j); range.setEnd(node, j + 1);
+    for (const b of range.getClientRects()) if (x >= b.left - 2 && x <= b.right + 2 && y >= b.top - 3 && y <= b.bottom + 3) return true;
+  }
+  return false;
+}
+function selectOnlyText() {
+  if (!finePointer) return;
+  document.addEventListener("mousedown", (e) => {
+    if (e.button !== 0 || e.target.closest("a,button,input,textarea,select,iframe")) return;
+    if (overText(e.clientX, e.clientY)) return;
+    e.preventDefault(); // no selection starts from empty space…
+    getSelection().removeAllRanges(); // …and clicking empty space still clears an existing one
+  });
+}
+
 /* =====================================================================
    Sound: small UI sounds synthesised with Web Audio (no audio files) and
    the on/off toggle in the bottom-left corner (the choice is remembered)
@@ -707,6 +738,6 @@ function notFound(msg) {
   buildShell();
   const page = document.body.dataset.page;
   ({ home: pageHome, genre: pageGenre, game: pageGame, play: pagePlay, notfound: () => ($("#app").innerHTML = notFound("This page doesn't exist")) }[page] || pageHome)();
-  modalEvents(); transitions(); cursor(); sound(); textGlow(); scrollProgress(); konami();
+  modalEvents(); transitions(); cursor(); selectOnlyText(); sound(); textGlow(); scrollProgress(); konami();
   reveal();
 })();
