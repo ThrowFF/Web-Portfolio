@@ -1,13 +1,20 @@
-/* Animated background: particle network + mouse field + click shockwaves */
+/* Animated background: particle network + mouse field + click shockwaves.
+   Wherever text sits on top, the web fades out so it never competes with what you're reading. */
 (() => {
   const canvas = document.getElementById("bg-canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
-  let W, H, nodes = [], packets = [], waves = [];
+  let W, H, nodes = [], packets = [], waves = [], textRects = [];
   const mouse = { x: -9999, y: -9999 };
   const LINK = 140;
+  const SLATE = "148,160,184", ACCENT = "224,179,108"; // match --accent in style.css
+
+  // Free-standing text. Text inside these opaque panels is already shielded by the panel itself.
+  const TEXT = "h1,h2,h3,h4,p,li,.sec-tag,.typer,.crumbs,.stat,.hero-status,.btn,.filter,.socials a";
+  const SHIELDED = ".card,.quest,.level,.info-panel,.contact-box,.tabs,.marquee,.nav,.modal,.wipe,.toast";
+  const FEATHER = [22, 15, 8, 2]; // padding per mask layer (px), soft outer edge to solid core
 
   function resize() {
     W = canvas.width = innerWidth * DPR;
@@ -20,12 +27,30 @@
       y: Math.random() * H,
       vx: (Math.random() - 0.5) * 0.35 * DPR,
       vy: (Math.random() - 0.5) * 0.35 * DPR,
-      r: (Math.random() * 1.6 + 0.6) * DPR,
+      r: (Math.random() * 1.4 + 0.6) * DPR,
       p: Math.random() * Math.PI * 2,
     }));
+    measure();
+  }
+
+  // Tight boxes around the text itself (not the whole block), in page coordinates so scrolling needs no re-measure
+  function measure() {
+    const range = document.createRange(), sx = scrollX, sy = scrollY;
+    textRects = [];
+    for (const el of document.querySelectorAll(TEXT)) {
+      if (el.closest(SHIELDED)) continue;
+      range.selectNodeContents(el);
+      const b = range.getBoundingClientRect();
+      if (b.width && b.height) textRects.push([b.left + sx, b.top + sy, b.width, b.height]);
+    }
+    if (reduce) draw();
   }
 
   addEventListener("resize", resize);
+  addEventListener("load", measure);
+  if (document.fonts) document.fonts.ready.then(measure);
+  setInterval(measure, 700); // catches reveals, typing, cards spawning and filtering
+  if (reduce) addEventListener("scroll", () => requestAnimationFrame(draw), { passive: true });
   addEventListener("mousemove", (e) => { mouse.x = e.clientX * DPR; mouse.y = e.clientY * DPR; });
   addEventListener("mouseleave", () => { mouse.x = mouse.y = -9999; });
   addEventListener("pointerdown", (e) => {
@@ -44,10 +69,7 @@
     if (best) packets.push({ a, b: best, t: 0 });
   }
 
-  function frame() {
-    ctx.clearRect(0, 0, W, H);
-    const L = LINK * DPR;
-
+  function update() {
     for (const n of nodes) {
       // mouse: gentle attraction inside radius, push away very close
       const dx = mouse.x - n.x, dy = mouse.y - n.y, d = Math.hypot(dx, dy);
@@ -68,19 +90,29 @@
       if (n.x < 0) n.x = W; if (n.x > W) n.x = 0;
       if (n.y < 0) n.y = H; if (n.y > H) n.y = 0;
     }
+    if (Math.random() < 0.08) spawnPacket();
+    packets = packets.filter((p) => p.t <= 1);
+    for (const p of packets) p.t += 0.025;
+    waves = waves.filter((w) => w.a > 0.02);
+    for (const w of waves) { w.r += 9 * DPR; w.a *= 0.94; }
+  }
 
-    // links
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const L = LINK * DPR;
+
+    // links: cool slate, warming to the accent around the pointer
     ctx.lineWidth = DPR * 0.8;
     for (let i = 0; i < nodes.length; i++) {
       const a = nodes[i];
+      const near = Math.hypot(mouse.x - a.x, mouse.y - a.y) < 200 * DPR;
       for (let j = i + 1; j < nodes.length; j++) {
         const b = nodes[j];
         const dx = a.x - b.x, dy = a.y - b.y;
         if (Math.abs(dx) > L || Math.abs(dy) > L) continue;
         const d = Math.hypot(dx, dy);
         if (d < L) {
-          const near = Math.hypot(mouse.x - a.x, mouse.y - a.y) < 200 * DPR;
-          ctx.strokeStyle = `rgba(57,255,136,${(1 - d / L) * (near ? 0.55 : 0.18)})`;
+          ctx.strokeStyle = near ? `rgba(${ACCENT},${(1 - d / L) * 0.35})` : `rgba(${SLATE},${(1 - d / L) * 0.18})`;
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
         }
       }
@@ -88,35 +120,51 @@
 
     // nodes
     for (const n of nodes) {
-      const glow = 0.5 + Math.sin(n.p) * 0.3;
-      ctx.fillStyle = `rgba(120,255,170,${glow})`;
+      ctx.fillStyle = `rgba(${SLATE},${0.35 + Math.sin(n.p) * 0.15})`;
       ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill();
     }
 
     // data packets travelling along links
-    if (Math.random() < 0.08) spawnPacket();
-    packets = packets.filter((p) => p.t <= 1);
+    ctx.fillStyle = `rgba(${ACCENT},.85)`;
+    ctx.shadowColor = `rgba(${ACCENT},.8)`; ctx.shadowBlur = 6 * DPR;
     for (const p of packets) {
-      p.t += 0.025;
       const x = p.a.x + (p.b.x - p.a.x) * p.t, y = p.a.y + (p.b.y - p.a.y) * p.t;
-      ctx.fillStyle = "#b6ff3b";
-      ctx.shadowColor = "#b6ff3b"; ctx.shadowBlur = 10 * DPR;
-      ctx.fillRect(x - 1.5 * DPR, y - 1.5 * DPR, 3 * DPR, 3 * DPR);
-      ctx.shadowBlur = 0;
+      ctx.fillRect(x - 1.25 * DPR, y - 1.25 * DPR, 2.5 * DPR, 2.5 * DPR);
     }
+    ctx.shadowBlur = 0;
 
     // shockwaves
-    waves = waves.filter((w) => w.a > 0.02);
+    ctx.lineWidth = 1.5 * DPR;
     for (const w of waves) {
-      w.r += 9 * DPR; w.a *= 0.94;
-      ctx.strokeStyle = `rgba(57,255,136,${w.a * 0.6})`;
-      ctx.lineWidth = 2 * DPR;
+      ctx.strokeStyle = `rgba(${ACCENT},${w.a * 0.35})`;
       ctx.beginPath(); ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2); ctx.stroke();
     }
 
-    if (!reduce) requestAnimationFrame(frame);
+    shieldText();
   }
 
+  // Erase most of the web behind text: stacked, widening rounded boxes give a soft edge
+  // (each layer removes 42% of what's left, so the core keeps only ~11% of the web)
+  function shieldText() {
+    if (!textRects.length) return;
+    const ox = scrollX, oy = scrollY, vh = innerHeight;
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "rgba(0,0,0,.42)";
+    for (const pad of FEATHER) {
+      ctx.beginPath();
+      for (const [x, y, w, h] of textRects) {
+        const top = y - oy;
+        if (top > vh + pad || top + h < -pad) continue;
+        const rx = (x - ox - pad) * DPR, ry = (top - pad) * DPR, rw = (w + pad * 2) * DPR, rh = (h + pad * 2) * DPR;
+        if (ctx.roundRect) ctx.roundRect(rx, ry, rw, rh, pad * DPR); else ctx.rect(rx, ry, rw, rh);
+      }
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  function tick() { update(); draw(); requestAnimationFrame(tick); }
+
   resize();
-  frame();
+  reduce ? draw() : tick();
 })();

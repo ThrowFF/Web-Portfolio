@@ -4,7 +4,7 @@ No frameworks, no build step, free to host on Netlify.
 
 ## Folder map
 ```
-index.html      Home: hero, engine tabs, genres (level select), experience, skills, contact
+index.html      Home: hero, engine tabs, genres, experience, skills, contact
 genre.html      One genre's games        → genre.html?g=fps
 game.html       One game's detail page   → game.html?id=project-alpha
 play.html       Play a Unity WebGL build → play.html?id=maze-runner-web
@@ -46,12 +46,14 @@ Netlify's free plan allows files up to a few hundred MB, but keep builds small (
 4. Site settings → Change site name → `yourname.netlify.app`.
    A custom domain (~$10/year) is the only thing that costs money, and it's optional.
 
-## Built-in game-feel features
-- Boot screen with PRESS START (first visit each session)
-- Crosshair cursor with hit sparks, click shockwaves in the background
-- XP bar that fills as you scroll, with level-ups
-- Game cards spawn in like loot drops, tilt in 3D, play the trailer on hover-click
-- Genres as a "World" level select with stars; experience as a quest log; skills as inventory slots
-- Achievement toasts (Welcome, Explorer, Cinephile, Completionist, and a Konami code secret: ↑↑↓↓←→←→BA)
-- "Level loading" page transitions: neon-edged shutters drop from where you click, and a loading card names the destination
+## Built-in features
+- Crosshair cursor with hit sparks and click shockwaves in the background; it locks on over links
+  and opens into a faint scope ring over descriptions
+- Text spotlight: letters near the pointer glow in a soft circle that follows it
+  (works on any plain-text element with class `readable`)
+- Particle-network background that fades out behind text so it never competes with reading
+- Thin scroll-progress bar along the top
+- Game cards fade in with a stagger and play the trailer on hover-click
+- Achievement toasts (Explorer, Cinephile, Completionist, and a Konami code secret: ↑↑↓↓←→←→BA)
+- "Level loading" page transitions: shutters drop from where you click, and a loading card names the destination
 - Respects "reduce motion" settings and works on phones

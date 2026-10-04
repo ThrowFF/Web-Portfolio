@@ -5,7 +5,7 @@
 
 const PROFILE = {
   name: "Zain Ul Abaidin",
-  brand: "twani.dev", // logo text in the top-left of every page
+  brand: "Twani.dev", // logo text in the top-left of every page
   role: "Game Designer",
   taglines: [
     "Game Designer · Unity Developer",
