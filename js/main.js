@@ -13,6 +13,8 @@ const store = {
 };
 
 const CLICKABLE = "a,button,.card,.level,.shot"; // what the cursor and hover sound react to
+const READ_REACH = 24; // px around a description where its glow switches on and a click can start selecting it
+const rectDist = (r, x, y) => Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
 
 const gameById = (id) => GAMES.find((g) => g.id === id);
 const genreById = (id) => GENRES.find((g) => g.id === id);
@@ -95,8 +97,9 @@ function cursor() {
   });
 }
 /* =====================================================================
-   Text selection only starts on actual letters. Rapid clicks on empty space
-   would otherwise make the browser select the nearest paragraph.
+   Text selection only starts on (or near) text. Rapid clicks on empty space
+   would otherwise make the browser select the nearest paragraph. Descriptions
+   get the same reach as their glow; other text needs a click on the letters.
    ===================================================================== */
 function overText(x, y) {
   let node, i;
@@ -116,7 +119,8 @@ function selectOnlyText() {
   if (!finePointer) return;
   document.addEventListener("mousedown", (e) => {
     if (e.button !== 0 || e.target.closest("a,button,input,textarea,select,iframe")) return;
-    if (overText(e.clientX, e.clientY)) return;
+    const x = e.clientX, y = e.clientY;
+    if (overText(x, y) || $$(".readable").some((el) => rectDist(el.getBoundingClientRect(), x, y) < READ_REACH)) return;
     e.preventDefault(); // no selection starts from empty space…
     getSelection().removeAllRanges(); // …and clicking empty space still clears an existing one
   });
@@ -227,10 +231,10 @@ function textGlow() {
     let near = Infinity;
     const boxes = els.map((el) => {
       const r = el.getBoundingClientRect();
-      near = Math.min(near, Math.hypot(Math.max(r.left - px, 0, px - r.right), Math.max(r.top - py, 0, py - r.bottom)));
+      near = Math.min(near, rectDist(r, px, py));
       return r;
     });
-    const on = near < 24;
+    const on = near < READ_REACH;
     power += ((on ? 1 : 0) - power) * (on ? 0.14 : 0.08);
     running = on || power > 0.01;
     const rad = running ? R * power : 0;
