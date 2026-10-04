@@ -334,8 +334,8 @@ section { padding: 110px 0 40px; }
 .quest .q-company { color: var(--accent); font-weight: 500; font-size: 15px; }
 .quest .q-period { font-size: 13.5px; color: var(--faint); }
 .quest .q-state {
-  font-size: 11.5px; font-weight: 600; color: var(--ok); padding: 2px 9px; border-radius: 999px;
-  background: rgba(124, 199, 154, .1); border: 1px solid rgba(124, 199, 154, .25);
+  font-size: 11.5px; font-weight: 600; color: var(--accent); padding: 2px 9px; border-radius: 999px;
+  background: var(--accent-soft); border: 1px solid rgba(var(--accent-rgb), .3);
 }
 .quest ul { list-style: none; margin-top: 12px; }
 .quest li { color: var(--muted); font-size: 15px; padding-left: 18px; position: relative; margin: 6px 0; }
@@ -440,13 +440,29 @@ footer { padding: 60px 0 40px; text-align: center; font-size: 13.5px; color: var
 .toast {
   position: fixed; bottom: 24px; right: 24px; z-index: 160; display: flex; align-items: center; gap: 12px;
   background: rgba(18, 22, 29, .96); border: 1px solid var(--line-strong); border-radius: 12px; padding: 10px 18px 10px 10px;
-  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, .8); transform: translateY(calc(100% + 40px)); transition: transform .45s var(--ease);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, .8); transform: translateY(calc(100% + 100px)); /* fully off-screen even when raised on phones */ transition: transform .45s var(--ease);
   max-width: calc(100vw - 48px);
 }
 .toast.show { transform: none; }
 .toast .trophy { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 15px; flex-shrink: 0; }
 .toast small { display: block; font-size: 11.5px; font-weight: 500; color: var(--faint); }
 .toast b { font-size: 14px; font-weight: 600; }
+
+/* Sound toggle (bottom-left): speaker with waves = on, speaker with ✕ = off */
+.sound-toggle {
+  position: fixed; left: 20px; bottom: 18px; z-index: 110;
+  width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%;
+  color: var(--accent); background: rgba(11, 14, 19, .8); border: 1px solid var(--line);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: color .2s, border-color .2s, background-color .2s;
+}
+.sound-toggle:hover { border-color: rgba(var(--accent-rgb), .5); background: var(--accent-soft); }
+.sound-toggle.off { color: var(--faint); }
+.sound-toggle.off:hover { color: var(--muted); border-color: var(--line-strong); background: rgba(11, 14, 19, .8); }
+.sound-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sound-toggle .spk { fill: currentColor; }
+.sound-toggle .waves, .sound-toggle .mute { transition: opacity .2s; }
+.sound-toggle.off .waves, .sound-toggle:not(.off) .mute { opacity: 0; }
 
 /* Page transition: dark shutters drop from the click, a loading card names the
    destination, the next page opens them downwards. --close/--hold/--open come from main.js */
@@ -514,7 +530,8 @@ footer { padding: 60px 0 40px; text-align: center; font-size: 13.5px; color: var
   .stat { padding: 0 20px; }
   .inv-group { grid-template-columns: 1fr; gap: 10px; }
   .inv-group h4 { padding-top: 0; }
-  .toast { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+  .toast { left: 16px; right: 16px; bottom: 64px; max-width: none; } /* clears the sound toggle */
+  .sound-toggle { left: 12px; bottom: 12px; }
 }
 @media (hover: none) { .play-trailer { opacity: 1; background: transparent; align-items: end; justify-items: end; padding: 10px; } .play-btn { width: 44px; height: 44px; transform: none; } .play-trailer small { display: none; } }
 

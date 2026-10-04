@@ -12,6 +12,8 @@ const store = {
   set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 
+const CLICKABLE = "a,button,.card,.level,.shot"; // what the cursor and hover sound react to
+
 const gameById = (id) => GAMES.find((g) => g.id === id);
 const genreById = (id) => GENRES.find((g) => g.id === id);
 const engineName = (id) => (ENGINES.find((e) => e.id === id) || { name: id }).name;
@@ -58,6 +60,7 @@ function buildShell() {
       <div class="modal-box"><span class="modal-title"></span><button class="modal-close">Close ✕</button><div class="modal-content"></div></div>
     </div>
     <div class="toast" id="toast" role="status"><div class="trophy">★</div><div><small>Achievement unlocked</small><b></b></div></div>
+    <button class="sound-toggle" type="button" aria-label="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="waves" d="M15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="mute" d="M16 9.5l5 5m0-5-5 5"/></svg></button>
     <div class="wipe" aria-hidden="true">${"<i></i>".repeat(WIPE.cols)}<div class="wipe-hud"><small></small><b></b><span class="wipe-bar"></span></div></div>
   `);
   $(".nav-toggle").addEventListener("click", () => $(".nav-links").classList.toggle("open"));
@@ -80,7 +83,7 @@ function cursor() {
   });
   document.documentElement.addEventListener("mouseleave", () => cur.classList.add("off"));
   document.addEventListener("mouseover", (e) => {
-    cur.classList.toggle("hover", !!e.target.closest("a,button,.card,.level,.shot"));
+    cur.classList.toggle("hover", !!e.target.closest(CLICKABLE));
     cur.classList.toggle("on-light", !!e.target.closest(".btn.solid"));
   });
   addEventListener("mousedown", (e) => {
@@ -88,6 +91,84 @@ function cursor() {
     sparks(e.clientX, e.clientY, 8);
   });
 }
+/* =====================================================================
+   Sound: small UI sounds synthesised with Web Audio (no audio files) and
+   the on/off toggle in the bottom-left corner (the choice is remembered)
+   ===================================================================== */
+const sfx = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let ctx = null, out = null, noise = null, on = true;
+  try { on = localStorage.getItem("sound") !== "off"; } catch {}
+
+  // Browsers only allow audio after a click or key press, so the context is created on the first one
+  function unlock() {
+    if (!AC) return;
+    if (!ctx) {
+      ctx = new AC();
+      out = ctx.createGain(); out.gain.value = 0.7; out.connect(ctx.destination);
+      noise = ctx.createBuffer(1, ctx.sampleRate / 2, ctx.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === "suspended") ctx.resume();
+  }
+  const live = () => on && ctx;
+
+  // Pitched blip: instant attack, exponential fade, optional pitch slide
+  function tone(f, dur, gain, { to = f, type = "sine", at = 0 } = {}) {
+    const t = ctx.currentTime + at, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f, t);
+    if (to !== f) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05);
+  }
+  // Band-passed noise with an optional filter sweep: clicks and whooshes
+  function hiss(dur, gain, { f = 1000, to = f, q = 1, at = 0 } = {}) {
+    const t = ctx.currentTime + at, s = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noise; bp.type = "bandpass"; bp.Q.value = q;
+    bp.frequency.setValueAtTime(f, t);
+    if (to !== f) bp.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + dur * 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(bp).connect(g).connect(out); s.start(t); s.stop(t + dur + 0.05);
+  }
+
+  return {
+    get on() { return on; },
+    set(v) { on = v; try { localStorage.setItem("sound", v ? "on" : "off"); } catch {} },
+    unlock,
+    hover() { if (live()) tone(2200, 0.035, 0.02, { type: "triangle" }); },
+    click() { if (live()) { tone(220, 0.09, 0.09, { to: 110 }); hiss(0.04, 0.03, { f: 3500, q: 0.8 }); } },
+    whoosh() { if (live()) hiss(0.45, 0.08, { f: 2200, to: 300, q: 1.4 }); },
+    chime() { if (live()) { tone(880, 0.22, 0.04); tone(1318.5, 0.3, 0.035, { at: 0.08 }); } },
+  };
+})();
+
+function sound() {
+  const btn = $(".sound-toggle");
+  const paint = () => {
+    btn.classList.toggle("off", !sfx.on);
+    btn.setAttribute("aria-pressed", sfx.on);
+    btn.title = sfx.on ? "Sound on" : "Sound off";
+  };
+  paint();
+  addEventListener("pointerdown", sfx.unlock, true); // capture: runs before the click sound below
+  addEventListener("keydown", sfx.unlock, true);
+  btn.addEventListener("click", () => { sfx.set(!sfx.on); paint(); sfx.chime(); }); // chime only plays when switching on
+  addEventListener("pointerdown", () => sfx.click());
+  // a tick each time the pointer reaches something clickable (not while moving around inside it)
+  let last = null;
+  if (finePointer) document.addEventListener("mouseover", (e) => {
+    const el = e.target.closest(CLICKABLE);
+    if (el && el !== last) sfx.hover();
+    last = el;
+  });
+}
+
 function sparks(x, y, n) {
   for (let i = 0; i < n; i++) {
     const s = document.createElement("i");
@@ -186,7 +267,7 @@ function nextToast() {
   if (toastBusy || !toastQ.length) return;
   toastBusy = true;
   const t = $("#toast"); $("b", t).textContent = toastQ.shift();
-  t.classList.add("show");
+  t.classList.add("show"); sfx.chime();
   setTimeout(() => { t.classList.remove("show"); setTimeout(() => { toastBusy = false; nextToast(); }, 500); }, 3200);
 }
 
@@ -291,6 +372,7 @@ function transitions() {
     e.preventDefault();
     const info = { ...wipeLabel(url, a), c: Math.min(WIPE.cols - 1, Math.floor((px / innerWidth) * WIPE.cols)) };
     store.set("wipe", info);
+    sfx.whoosh();
     setTimeout(() => location.assign(url.href), play("out", info) + WIPE.close + 40);
   });
 
@@ -625,6 +707,6 @@ function notFound(msg) {
   buildShell();
   const page = document.body.dataset.page;
   ({ home: pageHome, genre: pageGenre, game: pageGame, play: pagePlay, notfound: () => ($("#app").innerHTML = notFound("This page doesn't exist")) }[page] || pageHome)();
-  modalEvents(); transitions(); cursor(); textGlow(); scrollProgress(); konami();
+  modalEvents(); transitions(); cursor(); sound(); textGlow(); scrollProgress(); konami();
   reveal();
 })();

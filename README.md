@@ -52,6 +52,8 @@ Netlify's free plan allows files up to a few hundred MB, but keep builds small (
 - Text spotlight: letters near the pointer glow in a soft circle that follows it
   (works on any plain-text element with class `readable`)
 - Particle-network background that fades out behind text so it never competes with reading
+- UI sounds made with Web Audio (no audio files): hover tick, click, page-transition whoosh and an
+  achievement chime, with a Sound On/Off toggle in the bottom-left that remembers the choice
 - Thin scroll-progress bar along the top
 - Game cards fade in with a stagger and play the trailer on hover-click
 - Achievement toasts (Explorer, Cinephile, Completionist, and a Konami code secret: ↑↑↓↓←→←→BA)
