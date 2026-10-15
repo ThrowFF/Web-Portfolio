@@ -477,7 +477,6 @@ function pageHome() {
       <div class="hero-cta reveal">
         <a class="btn solid" href="#games">View my games</a>
         <a class="btn" href="#contact">Hire me</a>
-        ${P.resume ? `<a class="btn" href="${esc(P.resume)}" target="_blank" rel="noopener">Résumé ↓</a>` : ""}
       </div>
       <div class="stats reveal">${P.stats.map((s) => `<div class="stat"><b class="count-up">${esc(s.value)}</b><span class="readable">${esc(s.label)}</span></div>`).join("")}</div>
     </div>

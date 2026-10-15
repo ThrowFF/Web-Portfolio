@@ -19,7 +19,6 @@ const PROFILE = {
   contactNote: "Open to full-time roles, contracts and freelance work in game design and Unity development.",
   email: "zainulabaidin16@gmail.com",
   location: "Lahore, Pakistan",
-  resume: "assets/Zain-Ul-Abaidin-Resume.pdf", // leave "" to hide the button
   avatar: "", // e.g. "assets/images/me.jpg" (leave "" for initials)
   socials: [
     { label: "LinkedIn", url: "https://www.linkedin.com/in/zain-ul-abaidin-5819111b0/" },
