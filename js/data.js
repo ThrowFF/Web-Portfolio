@@ -29,11 +29,13 @@ const PROFILE = {
   stats: [
     { value: "5+", label: "Years experience" },
     { value: "20+", label: "Games shipped" },
-    { value: "2", label: "Engines mastered" },
+    { value: "1", label: "Engine mastered" },
   ],
 };
 
-/* Engines shown as tabs on the home page. Add more (e.g. Godot) any time. */
+/* Engines shown as tabs on the home page. Add more (e.g. Godot) any time. An engine's tab stays hidden
+   until at least one game below uses it as its `engine`, and the tab bar itself only appears once games
+   use two or more engines (with one engine, "All" and that engine would be the same list). */
 const ENGINES = [
   { id: "unity", name: "Unity" },
   { id: "Unreal", name: "Unreal" },

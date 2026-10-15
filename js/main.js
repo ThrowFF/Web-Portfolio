@@ -505,6 +505,8 @@ function pageHome() {
   const P = PROFILE, main = $("#app");
   const featured = GAMES.filter((g) => g.featured);
   const engineCounts = Object.fromEntries(ENGINES.map((e) => [e.id, GAMES.filter((g) => g.engine === e.id).length]));
+  const engines = ENGINES.filter((e) => engineCounts[e.id]); // an engine gets a tab once a game uses it
+  const engineTabs = engines.length > 1; // and the tabs only show once there are two engines to pick from
 
   main.innerHTML = `
   <section class="hero"><div class="wrap">
@@ -527,14 +529,14 @@ function pageHome() {
     <div class="sec-head reveal">
       <div class="sec-tag">Selected work</div>
       <h2 class="sec-title">My <em>Games</em></h2>
-      <p class="sec-sub readable">Pick an engine or filter by platform. Open a game for its trailer, screenshots and store links.</p>
+      <p class="sec-sub readable">${engineTabs ? "Pick an engine or filter by platform" : "Filter by platform"}. Open a game for its trailer, screenshots and store links.</p>
     </div>
     <div class="reveal">
-      <div class="tabs" id="engine-tabs">
+      ${engineTabs ? `<div class="tabs" id="engine-tabs">
         <span class="tab-pill"></span>
         <button class="tab active" data-engine="all">All<span class="count">${GAMES.length}</span></button>
-        ${ENGINES.map((e) => `<button class="tab" data-engine="${esc(e.id)}">${esc(e.name)}<span class="count">${engineCounts[e.id]}</span></button>`).join("")}
-      </div>
+        ${engines.map((e) => `<button class="tab" data-engine="${esc(e.id)}">${esc(e.name)}<span class="count">${engineCounts[e.id]}</span></button>`).join("")}
+      </div>` : ""}
       <div class="filters" id="platform-filters">
         <span class="lbl">Platform</span>
         <button class="filter on" data-platform="all">All</button>
@@ -607,22 +609,25 @@ function pageHome() {
 
   // tabs + filters
   let engine = "all", platform = "all";
-  const grid = $("#game-grid"), tabs = $("#engine-tabs"), pill = $(".tab-pill", tabs);
+  const grid = $("#game-grid"), tabs = $("#engine-tabs");
   const filtered = () => GAMES.filter((g) => (engine === "all" || g.engine === engine) && (platform === "all" || g.platforms.includes(platform)));
-  const movePill = () => {
-    const a = $(".tab.active", tabs);
-    Object.assign(pill.style, { left: a.offsetLeft + "px", top: a.offsetTop + "px", width: a.offsetWidth + "px", height: a.offsetHeight + "px" }); // follows the tab onto a wrapped row
-  };
-  $$(".tab", tabs).forEach((t) => t.addEventListener("click", () => {
-    $$(".tab", tabs).forEach((x) => x.classList.toggle("active", x === t));
-    engine = t.dataset.engine; movePill(); swapGrid(grid, filtered());
-  }));
+  if (tabs) {
+    const pill = $(".tab-pill", tabs);
+    const movePill = () => {
+      const a = $(".tab.active", tabs);
+      Object.assign(pill.style, { left: a.offsetLeft + "px", top: a.offsetTop + "px", width: a.offsetWidth + "px", height: a.offsetHeight + "px" }); // follows the tab onto a wrapped row
+    };
+    $$(".tab", tabs).forEach((t) => t.addEventListener("click", () => {
+      $$(".tab", tabs).forEach((x) => x.classList.toggle("active", x === t));
+      engine = t.dataset.engine; movePill(); swapGrid(grid, filtered());
+    }));
+    addEventListener("resize", movePill);
+    requestAnimationFrame(movePill);
+  }
   $$(".filter", $("#platform-filters")).forEach((f) => f.addEventListener("click", () => {
     $$(".filter").forEach((x) => x.classList.toggle("on", x === f));
     platform = f.dataset.platform; swapGrid(grid, filtered());
   }));
-  addEventListener("resize", movePill);
-  requestAnimationFrame(movePill);
 
   // spawn the grid the first time it scrolls into view
   const gObs = new IntersectionObserver((es) => { if (es[0].isIntersecting) { renderGrid(grid, filtered()); gObs.disconnect(); } }, { threshold: 0.05 });
