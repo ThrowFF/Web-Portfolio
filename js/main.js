@@ -18,6 +18,8 @@ const rectDist = (r, x, y) => Math.hypot(Math.max(r.left - x, 0, x - r.right), M
 
 const gameById = (id) => GAMES.find((g) => g.id === id);
 const genreById = (id) => GENRES.find((g) => g.id === id);
+const gamesIn = (ge) => GAMES.filter((g) => g.genres.includes(ge.id));
+const SHOWN_GENRES = GENRES.filter((ge) => gamesIn(ge).length); // a genre stays hidden until a game is tagged with it
 const engineName = (id) => (ENGINES.find((e) => e.id === id) || { name: id }).name;
 const coverOf = (g) => g.cover || (g.youtube ? `https://i.ytimg.com/vi/${g.youtube}/hqdefault.jpg` : "");
 const ytEmbed = (id) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
@@ -348,6 +350,9 @@ function modalEvents() {
 // leave, *then* the page changes, and the new page starts with the bar already full. Nothing moves while
 // the browser swaps pages, so its frozen in-between frame can never show as a jump.
 const WIPE = { cols: 6, step: 32, close: 320, fill: 420, hold: 160, open: 460 };
+// First-load screen: the bar eases towards the real progress (time constant, ms), and the shutters open
+// regardless once this long (ms) has passed since the visit started, even if something is still loading
+const BOOT = { ease: 150, max: 8000 };
 
 // "/", "/index" and "/index.html" are the same page (Netlify serves all three)
 const pageKey = (u) => u.pathname.replace(/\.html$/, "").replace(/\/index$/, "/");
@@ -373,7 +378,7 @@ function transitions() {
     $("small", hud).textContent = info.k || "";
     $("b", hud).textContent = info.t || "";
     shutters.forEach((s, i) => s.style.setProperty("--d", Math.abs(i - originCol) * WIPE.step + "ms"));
-    w.classList.remove("in", "out", "hold"); void w.offsetWidth; w.classList.add(state);
+    w.classList.remove("in", "out", "hold", "boot", "lit"); void w.offsetWidth; w.classList.add(state);
     return Math.max(originCol, WIPE.cols - 1 - originCol) * WIPE.step;
   };
   const open = (info) => {
@@ -381,16 +386,18 @@ function transitions() {
     setTimeout(() => w.classList.remove("in"), WIPE.hold + reach + WIPE.open + 60);
   };
 
+  // Behind the shutters: jump straight to the #section, so it's what they open on
+  const jumpToHash = () => {
+    const el = location.hash && document.getElementById(location.hash.slice(1));
+    if (el) { const r = document.documentElement.style; r.scrollBehavior = "auto"; el.scrollIntoView(); r.scrollBehavior = ""; }
+  };
+
   // Arrived through a wipe: page starts covered, jump to the #section behind the shutters, then open
   const pending = store.get("wipe", null);
   if (pending) {
     store.set("wipe", null);
-    if (!reduceMotion) {
-      const el = location.hash && document.getElementById(location.hash.slice(1));
-      if (el) { const r = document.documentElement.style; r.scrollBehavior = "auto"; el.scrollIntoView(); r.scrollBehavior = ""; }
-      open(pending);
-    } else w.classList.remove("hold");
-  }
+    if (!reduceMotion) { jumpToHash(); open(pending); } else w.classList.remove("hold");
+  } else if (w.classList.contains("boot")) boot(w, open, jumpToHash);
 
   addEventListener("pointerdown", (e) => (px = e.clientX), true); // card clicks are re-dispatched with clientX 0
   document.addEventListener("click", (e) => {
@@ -420,6 +427,38 @@ function transitions() {
 
   // Back/forward cache restores this page still covered: open it back up
   addEventListener("pageshow", (e) => { if (e.persisted && w.classList.contains("out")) open(wipeLabel(new URL(location.href))); });
+}
+
+// First load (typed URL, refresh, link from another site): the snippet in <head> covered the page with the
+// closed shutters. Fill the bar with real progress (page + scripts, fonts, the images on the first screen),
+// then open them from the middle, the same way arriving through a transition does.
+function boot(w, open, jumpToHash) {
+  if (performance.now() > BOOT.max) return w.classList.remove("hold", "boot"); // scripts came in very late: just show the page
+  jumpToHash();
+  // names the page being loaded (a game, a genre), but not the owner: the home page gets just the bar
+  const label = wipeLabel(new URL(location.href)), small = $(".wipe-hud small", w);
+  const title = label.t === PROFILE.name ? "" : label.t || document.title;
+  const onScreen = (r) => r.width && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+  const imgs = $$("img").filter((img) => !img.complete && onScreen(img.getBoundingClientRect()));
+  const total = 2 + imgs.length;
+  let done = 1; // this script is running, so the page and its scripts are in
+  const tick = () => done++;
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(tick);
+  imgs.forEach((img) => ["load", "error"].forEach((ev) => img.addEventListener(ev, tick, { once: true })));
+
+  $("b", w).textContent = title;
+  w.classList.add("lit");
+  let shown = 0, last = performance.now();
+  const frame = (now) => {
+    const target = now > BOOT.max ? 1 : done / total;
+    // aim a little past the real progress and stop at it, so the bar arrives instead of crawling the last %
+    shown = Math.min(target, shown + (target + 0.05 - shown) * (1 - Math.exp(-Math.max(0, now - last) / BOOT.ease))); last = now;
+    w.style.setProperty("--p", shown);
+    small.textContent = `Loading · ${Math.floor(shown * 100)}%`;
+    if (shown < 1) requestAnimationFrame(frame);
+    else open({ k: small.textContent, t: title, c: (WIPE.cols - 1) / 2 });
+  };
+  requestAnimationFrame(frame);
 }
 
 /* =====================================================================
@@ -511,9 +550,9 @@ function pageHome() {
       <h2 class="sec-title">Browse by <em>Genre</em></h2>
       <p class="sec-sub readable">Pick a genre to see every game I've made in it.</p>
     </div>
-    <div class="levels">${GENRES.map((ge, i) => {
-      const n = GAMES.filter((g) => g.genres.includes(ge.id)).length;
-      return `<a class="level reveal ${n ? "" : "locked"}" href="genre.html?g=${esc(ge.id)}" style="--rd:${(i % 4) * 60}ms">
+    <div class="levels">${SHOWN_GENRES.map((ge, i) => {
+      const n = gamesIn(ge).length;
+      return `<a class="level reveal" href="genre.html?g=${esc(ge.id)}" style="--rd:${(i % 4) * 60}ms">
         <div class="lvl-no">${String(i + 1).padStart(2, "0")}</div>
         <h3>${esc(ge.name)}</h3><p>${esc(ge.blurb)}</p>
         <div class="lvl-foot"><span>${n} game${n === 1 ? "" : "s"}</span><span class="go">→</span></div>
@@ -611,9 +650,9 @@ function typer(el, lines) {
 function pageGenre() {
   const ge = genreById(params.get("g"));
   const main = $("#app");
-  if (!ge) { main.innerHTML = notFound("Genre not found"); return; }
+  if (!ge || !SHOWN_GENRES.includes(ge)) { main.innerHTML = notFound("Genre not found"); return; }
   document.title = `${ge.name} games · ${PROFILE.name}`;
-  const list = GAMES.filter((g) => g.genres.includes(ge.id));
+  const list = gamesIn(ge);
   const engines = ENGINES.filter((e) => list.some((g) => g.engine === e.id));
   unlock("explorer", "Explorer: browsed a genre");
 
@@ -628,7 +667,7 @@ function pageGenre() {
   <div class="wrap"><div class="grid" id="game-grid"></div></div>
   <section><div class="wrap">
     <div class="sec-tag">Other genres</div>
-    <div class="genre-switch">${GENRES.filter((x) => x.id !== ge.id).map((x) => `<a class="filter" href="genre.html?g=${esc(x.id)}">${esc(x.name)}</a>`).join("")}</div>
+    <div class="genre-switch">${SHOWN_GENRES.filter((x) => x !== ge).map((x) => `<a class="filter" href="genre.html?g=${esc(x.id)}">${esc(x.name)}</a>`).join("")}</div>
   </div></section>`;
 
   const grid = $("#game-grid");

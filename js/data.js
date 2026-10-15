@@ -5,7 +5,7 @@
 
 const PROFILE = {
   name: "Zain ul Abaidin",
-  brand: "Twani.dev", // logo text in the top-left of every page
+  brand: "twani.dev", // logo text in the top-left of every page
   cursor: "pointer", // "pointer" (themed arrow) or "crosshair"
   role: "Game Designer",
   taglines: [
@@ -49,7 +49,8 @@ const PLATFORMS = {
   roblox: { name: "Roblox", short: "ROBLOX" },
 };
 
-/* Genres: each one gets its own page (genre.html?g=<id>). */
+/* Genres: each one gets its own page (genre.html?g=<id>). A genre stays hidden on the site until at
+   least one game below lists its id in `genres`, then it shows up by itself. */
 const GENRES = [
   { id: "hyper-casual", name: "Hyper Casual", blurb: "One-tap, instantly fun mobile games." },
   { id: "casual", name: "Casual", blurb: "Relaxed, accessible games for everyone." },

@@ -321,7 +321,6 @@ section { padding: 110px 0 40px; }
 .level .lvl-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-size: 13px; font-weight: 500; color: var(--faint); }
 .level .go { color: var(--accent); opacity: 0; transform: translateX(-6px); transition: opacity .25s, transform .25s var(--ease); }
 .level:hover .go { opacity: 1; transform: none; }
-.level.locked.in { opacity: .5; }
 
 /* =====================================================================
    Experience timeline
@@ -483,6 +482,13 @@ footer { padding: 60px 0 40px; text-align: center; font-size: 13.5px; color: var
 .wipe.hold i, .wipe.hold .wipe-bar::after { transform: none; }
 .wipe.hold .wipe-hud { opacity: 1; }
 @keyframes holdGiveUp { to { visibility: hidden; } }
+/* First load ("boot", no transition to continue): the same closed shutters are the loading screen. main.js
+   fades the card in once it has named the page ("lit"), fills the bar with real progress (--p), then opens
+   them. Swallows clicks meanwhile, and waits up to 10s for main.js before giving up */
+.wipe.hold.boot { pointer-events: auto; animation-delay: 10s; }
+.wipe.hold.boot .wipe-hud { opacity: 0; }
+.wipe.hold.boot.lit .wipe-hud { animation: hudIn .3s ease-out both; }
+.wipe.hold.boot .wipe-bar::after { transform: scaleX(var(--p, 0)); }
 .wipe.out { pointer-events: auto; } /* swallow double clicks while leaving */
 .wipe i {
   --d: 0ms; position: relative; margin-right: -1px; /* overlap neighbours: no hairline seams */
@@ -507,6 +513,7 @@ footer { padding: 60px 0 40px; text-align: center; font-size: 13.5px; color: var
 }
 .wipe-hud small { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); }
 .wipe-hud b { font-size: clamp(28px, 5vw, 52px); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; color: var(--text); }
+.wipe-hud b:empty { display: none; } /* no title: keep the label and bar together */
 .wipe-bar { width: min(220px, 60vw); height: 2px; margin-top: 6px; background: rgba(255, 255, 255, .08); }
 .wipe-bar::after { content: ""; display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
 .wipe.out .wipe-hud { animation: hudIn .22s ease-out calc(var(--close) * .8) both; }
